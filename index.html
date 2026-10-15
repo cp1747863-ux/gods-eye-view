@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God's Eye View - Portal Universitario USM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 900: '#7f1d1d' },
+                        dark: { 800: '#1e1b4b', 900: '#0f172a', 950: '#020617' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .pie-3d-shadow {
+            filter: drop-shadow(0px 15px 12px rgba(0, 0, 0, 0.6));
+            transform: perspective(600px) rotateX(25deg);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-600 p-2 rounded-xl text-white shadow-lg shadow-red-600/30 flex items-center justify-center">
+                    <i data-lucide="eye" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-white">God's Eye View</h1>
+                    <p class="text-xs text-slate-400">Portal Académico & Mallas Interactivas USM</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openApiKeyModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Configurar IA (Gemini)</span>
+                </button>
+                <button onclick="openTermsModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-red-400"></i>
+                    <span>Aviso Legal</span>
+                </button>
+                <button onclick="toggleTheme()" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 border border-slate-700 transition">
+                    <i data-lucide="sun" id="theme-icon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+        <section class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sede / Campus</label>
+                    <select id="select-sede" onchange="onSedeChange()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-red-500 transition">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Carrera</label>
+                    <select id="select-carrera" onchange="onCarreraChange()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-red-500 transition">
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <div class="w-full grid grid-cols-3 gap-2 text-center bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase">Aprobados</span>
+                            <span id="stat-aprobados" class="font-bold text-emerald-400 text-sm">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase">Créditos</span>
+                            <span id="stat-creditos" class="font-bold text-sky-400 text-sm">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase">Avance</span>
+                            <span id="stat-avance" class="font-bold text-red-400 text-sm">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+            <button onclick="switchTab('malla')" id="tab-malla" class="px-4 py-2 rounded-xl font-medium text-sm transition bg-red-600 text-white shadow-lg shadow-red-600/30 flex items-center space-x-2">
+                <i data-lucide="git-branch" class="w-4 h-4"></i>
+                <span>Malla Curricular</span>
+            </button>
+            <button onclick="switchTab('estadisticas')" id="tab-estadisticas" class="px-4 py-2 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800 flex items-center space-x-2">
+                <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                <span>Resumen Visual 3D</span>
+            </button>
+            <button onclick="switchTab('horario')" id="tab-horario" class="px-4 py-2 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800 flex items-center space-x-2">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+                <span>Armador de Horario</span>
+            </button>
+        </div>
+
+        <div id="view-malla" class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 id="career-title" class="text-xl font-bold text-white tracking-tight">Selecciona una carrera</h2>
+                <div class="flex space-x-2">
+                    <button onclick="resetProgress()" class="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-800 transition">Reiniciar Progreso</button>
+                </div>
+            </div>
+            <div id="malla-container" class="space-y-8"></div>
+        </div>
+
+        <!-- 3D VISUAL STATS TAB -->
+        <div id="view-estadisticas" class="hidden space-y-6">
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div class="space-y-4 max-w-md">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">Análisis de Progreso</span>
+                        <h3 class="text-2xl font-bold text-white tracking-tight">Evaluación Visual de Avance Académico</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Gráfico interactivo tipo pastel 3D con efecto de profundidad para visualizar el porcentaje de asignaturas aprobadas y pendientes de tu carrera.</p>
+                        
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Aprobados</span>
+                                <span id="stat-chart-aprobados" class="text-lg font-bold text-emerald-400">0%</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Pendientes</span>
+                                <span id="stat-chart-pendientes" class="text-lg font-bold text-red-400">100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full max-w-sm flex justify-center py-6">
+                        <div class="pie-3d-shadow w-72 h-72 relative">
+                            <canvas id="chart3dCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-horario" class="hidden space-y-6">
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-lg font-bold text-white mb-2 flex items-center space-x-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-red-500"></i>
+                    <span>Planificador Semanal de Clases y Estudio</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <input type="text" id="h-name" placeholder="Asignatura (ej. MAT-021)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
+                    <select id="h-day" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
+                        <option value="Lunes">Lunes</option>
+                        <option value="Martes">Martes</option>
+                        <option value="Miércoles">Miércoles</option>
+                        <option value="Jueves">Jueves</option>
+                        <option value="Viernes">Viernes</option>
+                        <option value="Sábado">Sábado</option>
+                    </select>
+                    <select id="h-block" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
+                        <option value="08:00 - 09:30">Bloque 1-2 (08:00 - 09:30)</option>
+                        <option value="09:45 - 11:15">Bloque 3-4 (09:45 - 11:15)</option>
+                        <option value="11:30 - 13:00">Bloque 5-6 (11:30 - 13:00)</option>
+                        <option value="14:00 - 15:30">Bloque 7-8 (14:00 - 15:30)</option>
+                        <option value="15:45 - 17:15">Bloque 9-10 (15:45 - 17:15)</option>
+                        <option value="17:30 - 19:00">Bloque 11-12 (17:30 - 19:00)</option>
+                    </select>
+                    <button onclick="addScheduleItem()" class="bg-red-600 hover:bg-red-500 text-white font-medium rounded-xl px-4 py-2 text-sm transition shadow-lg shadow-red-600/20">Agregar Bloque</button>
+                </div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-4 py-3">Día</th>
+                            <th class="px-4 py-3">Horario</th>
+                            <th class="px-4 py-3">Asignatura</th>
+                            <th class="px-4 py-3 text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-tbody" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING GEMINI AI ASSISTANT WIDGET -->
+    <div id="ai-chat-widget" class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div id="ai-chat-box" class="hidden bg-slate-900 border border-slate-800 rounded-2xl w-80 sm:w-96 shadow-2xl overflow-hidden flex flex-col mb-3 transition-all duration-300">
+            <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-amber-500/20 text-amber-400 p-1.5 rounded-lg">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs text-white">Asistente Gemini USM</h4>
+                        <p class="text-[10px] text-slate-400">IA Académica Inteligente</p>
+                    </div>
+                </div>
+                <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="ai-messages" class="p-4 h-72 overflow-y-auto space-y-3 text-xs text-slate-300">
+                <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+                    <p class="font-semibold text-amber-400 mb-1">¡Hola, sansano/a!</p>
+                    <p>Soy tu asistente impulsado por Google Gemini. Pregúntame sobre tu malla, consejos de estudio o recomendaciones de carga académica.</p>
+                </div>
+            </div>
+            <div class="p-3 bg-slate-950 border-t border-slate-800 flex space-x-2">
+                <input type="text" id="ai-input" placeholder="Escribe tu consulta académica..." onkeydown="if(event.key==='Enter') sendAiMessage()" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                <button onclick="sendAiMessage()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">Enviar</button>
+            </div>
+        </div>
+        <button onclick="toggleAiChat()" class="bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- API KEY CONFIG MODAL WITH CLEAR INSTRUCTIONS -->
+    <div id="apikey-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-base flex items-center space-x-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
+                    <span>Configurar Google Gemini API Key</span>
+                </h3>
+                <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-slate-300">
+                <p class="font-semibold text-white text-xs flex items-center space-x-1.5">
+                    <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
+                    <span>¿Cómo obtener tu API Key gratuita de Gemini?</span>
+                </p>
+                <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-400">
+                    <li>Entra a <a href="https://aistudio.google.com/" target="_blank" class="text-amber-400 underline font-medium">Google AI Studio</a> e inicia sesión con cualquier cuenta de Google.</li>
+                    <li>Haz clic en el botón superior que dice <strong>"Get API key"</strong> (Obtener clave de API).</li>
+                    <li>Crea o selecciona un proyecto y copia tu clave (comienza con <code>AQ...</code> o <code>AIza...</code>).</li>
+                    <li>Pégala en el campo de abajo. Se guardará de forma privada solo en tu navegador (<code>localStorage</code>).</li>
+                </ol>
+            </div>
+
+            <div>
+                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Tu Gemini API Key</label>
+                <input type="password" id="gemini-key-input" placeholder="AQ..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-2">
+                <button onclick="closeApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="saveApiKey()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-lg shadow-amber-600/30">Guardar Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TERMS MODAL -->
+    <div id="terms-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-lg flex items-center space-x-2">
+                    <i data-lucide="shield" class="w-5 h-5 text-red-500"></i>
+                    <span>Términos de Uso y Propiedad Intelectual</span>
+                </h3>
+                <button onclick="closeTermsModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="text-xs text-slate-300 space-y-3 max-h-80 overflow-y-auto pr-2">
+                <p><strong>1. Autoría y Titularidad:</strong> Este software ("God's Eye View - Portal Universitario") ha sido diseñado y desarrollado de manera completamente independiente y autónoma en tiempo libre, constituyendo una obra protegida por las leyes de propiedad intelectual y derechos de autor vigentes en Chile (Ley N° 17.336).</p>
+                <p><strong>2. Desvinculación Institucional:</strong> Esta plataforma es un proyecto estudiantil independiente. **No está afiliada, respaldada, patrocinada ni oficialmente vinculada** con la Universidad Técnica Federico Santa María (UTFSM).</p>
+                <p><strong>3. Privacidad:</strong> Opera íntegramente en el navegador usando `localStorage`.</p>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeTermsModal()" class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-lg shadow-red-600/30">Entendido y Aceptado</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-800/80 bg-slate-900/40 text-center py-4 text-xs text-slate-400 mt-auto">
+        <p>God's Eye View • Desarrollado de forma independiente. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="js/mallas.js"></script>
+    <script>
+        lucide.createIcons();
+        let userProgress = JSON.parse(localStorage.getItem('gev_progress') || '{}');
+        let userSchedule = JSON.parse(localStorage.getItem('gev_schedule') || '[]');
+        let chartInstance = null;
+
+        function initApp() {
+            const sedeSelect = document.getElementById('select-sede');
+            if(!sedeSelect) return;
+            sedeSelect.innerHTML = datosUSM.sedes.map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
+            onSedeChange();
+            renderSchedule();
+            updateStats();
+            init3DChart();
+        }
+
+        function onSedeChange() {
+            const sedeId = document.getElementById('select-sede').value;
+            const carreraSelect = document.getElementById('select-carrera');
+            const carreras = datosUSM.carreras[sedeId] || [];
+            carreraSelect.innerHTML = carreras.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            onCarreraChange();
+        }
+
+        function onCarreraChange() {
+            const carreraId = document.getElementById('select-carrera').value;
+            const carreraSelect = document.getElementById('select-carrera');
+            const careerName = carreraSelect.options[carreraSelect.selectedIndex]?.text || '';
+            document.getElementById('career-title').innerText = careerName;
+            renderMalla(carreraId);
+        }
+
+        function renderMalla(carreraId) {
+            const container = document.getElementById('malla-container');
+            const semestres = datosUSM.mallas[carreraId];
+            
+            if (!semestres || semestres.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center bg-slate-900/40 rounded-2xl border border-slate-800 text-slate-400">Malla curricular en proceso de carga o pendiente para esta carrera en el repositorio. Selecciona Ingeniería Civil Informática o Plan Común para ver la malla de ejemplo interactiva.</div>`;
+                updateStats();
+                return;
+            }
+
+            container.innerHTML = semestres.map(sem => `
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
+                    <h3 class="font-bold text-white text-base mb-4 flex items-center space-x-2">
+                        <span class="bg-red-600 text-white text-xs px-2.5 py-1 rounded-lg">Semestre ${sem.semestre}</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        ${sem.ramos.map(r => {
+                            const isApproved = userProgress[r.codigo] || false;
+                            return `
+                                <div onclick="toggleRamo('${r.codigo}')" class="cursor-pointer p-3.5 rounded-xl border transition flex flex-col justify-between ${isApproved ? 'bg-emerald-950/30 border-emerald-500/50 text-emerald-200' : 'bg-slate-950 border-slate-800/80 text-slate-300 hover:border-slate-700'}">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-xs font-mono font-bold ${isApproved ? 'text-emerald-400' : 'text-red-400'}">${r.codigo}</span>
+                                        <span class="text-[10px] bg-slate-900 px-2 py-0.5 rounded text-slate-400">${r.creditos} Cr.</span>
+                                    </div>
+                                    <p class="text-xs font-medium leading-snug">${r.nombre}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+            updateStats();
+        }
+
+        function toggleRamo(codigo) {
+            userProgress[codigo] = !userProgress[codigo];
+            localStorage.setItem('gev_progress', JSON.stringify(userProgress));
+            renderMalla(document.getElementById('select-carrera').value);
+        }
+
+        function resetProgress() {
+            if (confirm("¿Reiniciar progreso de ramos aprobados?")) {
+                userProgress = {};
+                localStorage.setItem('gev_progress', JSON.stringify(userProgress));
+                renderMalla(document.getElementById('select-carrera').value);
+            }
+        }
+
+        function updateStats() {
+            const carreraId = document.getElementById('select-carrera')?.value;
+            const semestres = datosUSM.mallas[carreraId] || [];
+            
+            // Calculate total ramos in active career or default to 12
+            let totalRamos = 0;
+            semestres.forEach(s => totalRamos += s.ramos.length);
+            if (totalRamos === 0) totalRamos = 12;
+
+            const codes = Object.keys(userProgress);
+            const approvedCount = codes.filter(c => userProgress[c]).length;
+            
+            const pctAprobado = Math.min(Math.round((approvedCount / totalRamos) * 100), 100);
+            const pctPendiente = 100 - pctAprobado;
+
+            document.getElementById('stat-aprobados').innerText = approvedCount;
+            document.getElementById('stat-creditos').innerText = approvedCount * 4;
+            document.getElementById('stat-avance').innerText = pctAprobado + '%';
+
+            document.getElementById('stat-chart-aprobados').innerText = pctAprobado + '%';
+            document.getElementById('stat-chart-pendientes').innerText = pctPendiente + '%';
+
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [pctAprobado, pctPendiente];
+                chartInstance.update();
+            }
+        }
+
+        function init3DChart() {
+            const canvasEl = document.getElementById('chart3dCanvas');
+            if(!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Aprobados', 'Pendientes'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: [
+                            '#10b981', 
+                            '#ec4899', 
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#020617',
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function switchTab(tab) {
+            ['malla', 'estadisticas', 'horario'].forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if(view) view.classList.add('hidden');
+                if(btn) btn.className = "px-4 py-2 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800 flex items-center space-x-2";
+            });
+            const activeView = document.getElementById(`view-${tab}`);
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            if(activeView) activeView.classList.remove('hidden');
+            if(activeBtn) activeBtn.className = "px-4 py-2 rounded-xl font-medium text-sm transition bg-red-600 text-white shadow-lg shadow-red-600/30 flex items-center space-x-2";
+            lucide.createIcons();
+        }
+
+        function addScheduleItem() {
+            const name = document.getElementById('h-name').value.trim();
+            const day = document.getElementById('h-day').value;
+            const block = document.getElementById('h-block').value;
+            if (!name) return alert("Ingresa la asignatura.");
+            userSchedule.push({ id: Date.now(), name, day, block });
+            localStorage.setItem('gev_schedule', JSON.stringify(userSchedule));
+            document.getElementById('h-name').value = '';
+            renderSchedule();
+        }
+
+        function removeScheduleItem(id) {
+            userSchedule = userSchedule.filter(i => i.id !== id);
+            localStorage.setItem('gev_schedule', JSON.stringify(userSchedule));
+            renderSchedule();
+        }
+
+        function renderSchedule() {
+            const tbody = document.getElementById('schedule-tbody');
+            if(!tbody) return;
+            if (userSchedule.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No hay bloques agregados.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = userSchedule.map(i => `
+                <tr class="hover:bg-slate-900/40 transition">
+                    <td class="px-4 py-3 font-medium text-white">${i.day}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-slate-400">${i.block}</td>
+                    <td class="px-4 py-3 text-red-400 font-semibold">${i.name}</td>
+                    <td class="px-4 py-3 text-right"><button onclick="removeScheduleItem(${i.id})" class="text-xs text-slate-400 hover:text-red-400">Eliminar</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // GEMINI AI CHAT LOGIC
+        function toggleAiChat() {
+            const box = document.getElementById('ai-chat-box');
+            if(box) box.classList.toggle('hidden');
+        }
+
+        function openApiKeyModal() {
+            const keyInput = document.getElementById('gemini-key-input');
+            const modal = document.getElementById('apikey-modal');
+            if(keyInput) keyInput.value = localStorage.getItem('gev_gemini_key') || '';
+            if(modal) modal.classList.remove('hidden');
+        }
+        function closeApiKeyModal() { 
+            const modal = document.getElementById('apikey-modal');
+            if(modal) modal.classList.add('hidden'); 
+        }
+        function saveApiKey() {
+            const key = document.getElementById('gemini-key-input').value.trim();
+            localStorage.setItem('gev_gemini_key', key);
+            alert("¡API Key de Gemini guardada correctamente en tu navegador!");
+            closeApiKeyModal();
+        }
+
+        async function sendAiMessage() {
+            const input = document.getElementById('ai-input');
+            if(!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+
+            const msgContainer = document.getElementById('ai-messages');
+            msgContainer.innerHTML += `<div class="bg-slate-800 p-2.5 rounded-xl text-slate-200 ml-6 text-right"><b>Tú:</b> ${text}</div>`;
+            input.value = '';
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            const apiKey = localStorage.getItem('gev_gemini_key');
+            if (!apiKey) {
+                msgContainer.innerHTML += `<div class="bg-amber-950/40 border border-amber-500/30 p-2.5 rounded-xl text-amber-200">⚠️ Por favor haz clic en <b>Configurar IA (Gemini)</b> arriba para ver los pasos de obtención de tu API Key gratuita.</div>`;
+                msgContainer.scrollTop = msgContainer.scrollHeight;
+                return;
+            }
+
+            const loadingId = 'loading-' + Date.now();
+            msgContainer.innerHTML += `<div id="${loadingId}" class="bg-slate-800/40 p-2.5 rounded-xl text-slate-400 animate-pulse">Gemini está pensando...</div>`;
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: "Eres un asistente académico experto para estudiantes de la Universidad Técnica Federico Santa María (USM). Responde amablemente y con contexto académico preciso sobre esta consulta: " + text }]
+                        }]
+                    })
+                });
+                const data = await response.json();
+                const loadingEl = document.getElementById(loadingId);
+                if(loadingEl) loadingEl.remove();
+
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo obtener respuesta de Gemini.";
+                msgContainer.innerHTML += `<div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-slate-200"><b>Gemini:</b> ${reply}</div>`;
+            } catch (err) {
+                const loadingEl = document.getElementById(loadingId);
+                if(loadingEl) loadingEl.remove();
+                msgContainer.innerHTML += `<div class="bg-red-950/40 border border-red-500/30 p-2.5 rounded-xl text-red-300">Error al conectar con la API de Gemini: ${err.message}</div>`;
+            }
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+        function openTermsModal() { 
+            const m = document.getElementById('terms-modal');
+            if(m) m.classList.remove('hidden'); 
+        }
+        function closeTermsModal() { 
+            const m = document.getElementById('terms-modal');
+            if(m) m.classList.add('hidden'); 
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
